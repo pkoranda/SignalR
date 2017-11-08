@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Channels;
@@ -474,13 +476,79 @@ namespace Microsoft.AspNetCore.SignalR.Client.FunctionalTests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(TransportTypes))]
+        public async Task ClientCanUseJwtBearerTokenForAuthentication(TransportType transportType)
+        {
+            using (StartLog(out var loggerFactory))
+            {
+                var httpResponse = await new HttpClient().GetAsync(_serverFixture.BaseUrl + "/generateJwtToken");
+                httpResponse.EnsureSuccessStatusCode();
+                var token = await httpResponse.Content.ReadAsStringAsync();
+
+                var hubConnection = new HubConnectionBuilder()
+                    .WithUrl(_serverFixture.BaseUrl + "/authorizedhub")
+                    .WithTransport(transportType)
+                    .WithLoggerFactory(loggerFactory)
+                    .WithJwtBearer(() => token)
+                    .Build();
+                try
+                {
+                    await hubConnection.StartAsync().OrTimeout();
+                    var message = await hubConnection.InvokeAsync<string>("Echo", "Hello, World!").OrTimeout();
+                    Assert.Equal("Hello, World!", message);
+                }
+                catch (Exception ex)
+                {
+                    loggerFactory.CreateLogger<HubConnectionTests>().LogError(ex, "Exception from test");
+                    throw;
+                }
+                finally
+                {
+                    await hubConnection.DisposeAsync().OrTimeout();
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TransportTypes))]
+        public async Task ClientCanSendHeaders(TransportType transportType)
+        {
+            using (StartLog(out var loggerFactory))
+            {
+                var hubConnection = new HubConnectionBuilder()
+                    .WithUrl(_serverFixture.BaseUrl + "/default")
+                    .WithTransport(transportType)
+                    .WithLoggerFactory(loggerFactory)
+                    .WithHeader("X-test", "42")
+                    .WithHeader("X-42", "test")
+                    .Build();
+                try
+                {
+                    await hubConnection.StartAsync().OrTimeout();
+                    var headerValues = await hubConnection.InvokeAsync<string[]>("GetHeaderValues", new object[] { new[] { "X-test", "X-42" } }).OrTimeout();
+                    Assert.Equal(new[] { "42", "test" }, headerValues);
+                }
+                catch (Exception ex)
+                {
+                    loggerFactory.CreateLogger<HubConnectionTests>().LogError(ex, "Exception from test");
+                    throw;
+                }
+                finally
+                {
+                    await hubConnection.DisposeAsync().OrTimeout();
+                }
+            }
+        }
+
+
         public static IEnumerable<object[]> HubProtocolsAndTransportsAndHubPaths
         {
             get
             {
                 foreach (var protocol in HubProtocols)
                 {
-                    foreach (var transport in TransportTypes())
+                    foreach (var transport in TransportTypes().SelectMany(t => t))
                     {
                         foreach (var hubPath in HubPaths)
                         {
@@ -500,14 +568,14 @@ namespace Microsoft.AspNetCore.SignalR.Client.FunctionalTests
                 new MessagePackHubProtocol(),
             };
 
-        public static IEnumerable<TransportType> TransportTypes()
+        public static IEnumerable<object[]> TransportTypes()
         {
             if (TestHelpers.IsWebSocketsSupported())
             {
-                yield return TransportType.WebSockets;
+                yield return new object[] { TransportType.WebSockets };
             }
-            yield return TransportType.ServerSentEvents;
-            yield return TransportType.LongPolling;
+            yield return new object[] { TransportType.ServerSentEvents };
+            yield return new object[] { TransportType.LongPolling };
         }
     }
 }

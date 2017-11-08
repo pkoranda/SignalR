@@ -9,6 +9,7 @@
     <InternalAspNetCoreSdkPackageVersion>2.1.0-preview1-15549</InternalAspNetCoreSdkPackageVersion>
     <MicrosoftAspNetCoreAuthenticationCookiesPackageVersion>2.1.0-preview1-27475</MicrosoftAspNetCoreAuthenticationCookiesPackageVersion>
     <MicrosoftAspNetCoreAuthenticationCorePackageVersion>2.1.0-preview1-27475</MicrosoftAspNetCoreAuthenticationCorePackageVersion>
+    <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>2.1.0-preview1-27475</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
     <MicrosoftAspNetCoreAuthorizationPackageVersion>2.1.0-preview1-27475</MicrosoftAspNetCoreAuthorizationPackageVersion>
     <MicrosoftAspNetCoreAuthorizationPolicyPackageVersion>2.1.0-preview1-27475</MicrosoftAspNetCoreAuthorizationPolicyPackageVersion>
     <MicrosoftAspNetCoreCorsPackageVersion>2.1.0-preview1-27475</MicrosoftAspNetCoreCorsPackageVersion>
